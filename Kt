@@ -1,0 +1,66 @@
+#!/bin/bash
+
+#Dependendencies 
+#Common:
+# - dmenu
+#Kcopy
+# - greenclip https://github.com/erebe/greenclip
+# - i3 Configuration add `exec --no-startup-id greenclip daemon` 
+# in the i3 config file
+#Kfind took from https://pastebin.com/jQYXRfLq
+#- xdg-utils
+#- fd
+#config
+#Kgit 
+#works on github only for now
+#- git 
+#- greenclip
+#- xargs
+
+KfindLines=20
+KfindFolders=$HOME
+KgitUrls="https://api.github.com/users/pmandreoli/repos?per_page=100"
+KgitLines=10
+
+Kcopy(){
+    greenclip print | sed '/^$/d' | \
+        dmenu -i -l 10 -p clipboard | \
+        xargs -r -d'\n' -I '{}' greenclip print '{}'
+    }
+
+Kfind(){	
+
+    fd . $KfindFolders | sed 's/ /\\ /g' | sort -f | \
+        dmenu -i -l $KfindLines -p search | xargs xdg-open
+
+    }
+
+Kgit(){
+
+        curl $KgitUrls 2> /dev/null | grep clone_url |\
+            sed  's/"clone_url"://g; s/"//g; s/,//g; s/ //g' |\
+            dmenu -i -l $KgitLines  -p clonerepo |\
+            xargs -r -d'\n' greenclip print
+    }
+
+usage() { echo "Usage: $0 [-c | -f | -g ]:
+    -c | call the utility Kcopy a simple script that display your 
+       clipboard and move in your current paste the selected section
+    -f | find files in your pc and open it 
+    -g | show all your github repositories and paste it to clone
+    -h | show usage 
+    " 1>&2; exit 1; }
+
+while getopts "cfgh" o; do
+    case "${o}" in
+        c) Kcopy 
+            ;;
+        f) Kfind 
+            ;;
+        g) Kgit 
+            ;;
+        h) usage
+            ;;
+    esac
+done
+
